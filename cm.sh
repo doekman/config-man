@@ -8,10 +8,10 @@ function usage {
 Usage: $0 COMMAND
 
 cm add FILE [...]   Add one or more files to the vault
-cm backup           not-implemented-yet
-cm compare          not-implemented-yet
+cm backup           Perform the backup
+cm compare          List all changed files
 cm list             Shows all files in the vault
-cm restore          not-implemented-yet
+cm restore          (not-implemented-yet)
 
 You will need to run this tool from a config-man vault.
 
@@ -27,7 +27,7 @@ function cm_add {
 		else
 			mkdir -p "$CM_BASE/$(dirname "$1")"
 			touch "$CM_BASE/$1"
-			echo "Added: '$CM_BASE/$1'"
+			echo "- '$CM_BASE/$1' added"
 		fi
 	else
 		echo "WARNING: the file '$1' does not exist; skipping."
@@ -35,7 +35,32 @@ function cm_add {
 }
 
 function cm_list {
-	find "." -type f -not -name ".config-man" -and -not -name ".DS_Store" | sed 's/^\.//'
+	find "." -type f -not -name ".config-man" -and -not -name ".DS_Store" -and -not -path '*/\.git/*' | sed 's/^\.//'
+}
+
+function cm_backup {
+	for file in $(cm_list); do
+		if [[ -f "$file" ]]; then
+			cp -f "$file" "$CM_BASE/$file"
+			echo "- '$file' copied"
+		else
+			echo "WARNING: file '$file' doesn't exist; skipping"
+		fi
+	done
+}
+
+function cm_compare {
+	for file in $(cm_list); do
+		if [[ -f "$file" ]]; then
+			if diff --brief "$file" "$CM_BASE/$file" > /dev/null; then
+				echo "- '$file' is unchanged"
+			else
+				echo "# '$file' HAS BEEN changed"
+			fi
+		else
+			echo "WARNING: file '$file' doesn't exist; skipping"
+		fi
+	done
 }
 
 if [[ ! -f ./.config-man ]]; then
@@ -68,9 +93,9 @@ if [[ $cmd == "add" ]]; then
 elif [[ $cmd == "list" ]]; then
 	cm_list
 elif [[ $cmd == "backup" ]]; then
-	echo "Not implemented yet"
+	cm_backup
 elif [[ $cmd == "restore" ]]; then
 	echo "Not implemented yet"
 elif [[ $cmd == "compare" ]]; then
-	echo "Not implemented yet"
+	cm_compare
 fi
