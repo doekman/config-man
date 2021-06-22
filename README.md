@@ -11,18 +11,21 @@ Functionality and reasons behind it are described in [what if][what-if]-issues:
 
 ## Installation
 
-	./config.sh          # shows help and installation status
-	./config.sh install  # installs symbolic link into /usr/local/bin
+	./configure.sh          # shows help and installation status
+	./configure.sh install  # installs symbolic link into /usr/local/bin
 
 
 ## Usage
 
 
 	# Initialise a config-man vault
-	touch .config-man
+	cm init
 	
 	# Add files to the vault
 	cm add ~/.ssh/config ~/.gitconfig ~/.gitignore_global
 	
 	# Show all files in vault
 	cm list
+
+	# Perform a backup
+	cm backup

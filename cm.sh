@@ -10,6 +10,7 @@ Usage: $0 COMMAND
 cm add FILE [...]   Add one or more files to the vault
 cm backup           Perform the backup
 cm compare          List all changed files
+cm init             Places a .config-man file in the current folder
 cm list             Shows all files in the vault
 cm restore          (not-implemented-yet)
 
@@ -18,6 +19,14 @@ You will need to run this tool from a config-man vault.
 TOTHIERENNIETVERDER
 	echo "$(tput bel)❗️" "$@"
 	exit 1
+}
+
+function cm_init {
+	if [[ -f ./.config-man ]]; then
+		echo "WARNING: this folder is already initialized (the file '.config-man' exists)"
+	else
+		touch ./.config-man
+	fi
 }
 
 function cm_add {
@@ -63,6 +72,11 @@ function cm_compare {
 	done
 }
 
+if [[ ${1:-} == "init" ]]; then
+	cm_init
+	exit 0
+fi
+
 if [[ ! -f ./.config-man ]]; then
 	usage "The file ./.config-man not found"
 fi
@@ -74,7 +88,7 @@ if [[ $# -lt 1 ]]; then
 	usage "Please provide a command"
 fi
 case "$1" in
-	add|backup|compare|list|restore) cmd="$1";;
+	add|backup|compare|init|list|restore) cmd="$1";;
 	*) usage "Unknown command '$1'";;
 esac
 shift
