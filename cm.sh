@@ -36,7 +36,7 @@ function cm_add {
 		else
 			mkdir -p "$CM_BASE/$(dirname "$1")"
 			touch "$CM_BASE/$1"
-			echo "- '$CM_BASE/$1' added"
+			echo "- '$1' added"
 		fi
 	else
 		echo "WARNING: the file '$1' does not exist; skipping."
