@@ -5,14 +5,18 @@ IFS=$'\n\t'
 
 function usage {
 	cat <<TOTHIERENNIETVERDER
-Usage: $0 COMMAND
+Usage: $0 COMMAND [FLAGS] ...
 
-cm add FILE [...]   Add one or more files to the vault
-cm backup           Perform the backup
-cm compare          List all changed files
-cm init             Places a .config-man file in the current folder
-cm list             Shows all files in the vault
-cm restore          (not-implemented-yet)
+COMMAND:
+	cm add FILE [...]   Add one or more files to the vault
+	cm backup           Perform the backup
+	cm compare          List all changed files
+	cm init             Places a .config-man file in the current folder
+	cm list             Shows all files in the vault
+	cm restore          (not-implemented-yet)
+FLAGS:
+	-v, --verbose       Also print messages when something succeeds
+	-dr, --dry-run      Don't actually modify the file system
 
 You will need to run this tool from a config-man vault.
 
@@ -21,11 +25,17 @@ TOTHIERENNIETVERDER
 	exit 1
 }
 
+function verbose_echo {
+	if [[ $VERBOSE == 1 ]]; then
+		echo "$@"
+	fi
+}
+
 function cm_init {
 	if [[ -f ./.config-man ]]; then
 		echo "WARNING: this folder is already initialized (the file '.config-man' exists)"
 	else
-		touch ./.config-man
+		[[ $DRY_RUN == 0 ]] && touch ./.config-man
 	fi
 }
 
@@ -34,8 +44,10 @@ function cm_add {
 		if [[ -f "$CM_BASE/$1" ]]; then
 			echo "WARNING: the file '$1' has already been added; skipping."
 		else
-			mkdir -p "$CM_BASE/$(dirname "$1")"
-			touch "$CM_BASE/$1"
+			if [[ $DRY_RUN == 0 ]]; then
+				mkdir -p "$CM_BASE/$(dirname "$1")"
+				touch "$CM_BASE/$1"
+			fi
 			echo "- '$1' added"
 		fi
 	else
@@ -48,10 +60,21 @@ function cm_list {
 }
 
 function cm_backup {
+	local target
 	for file in $(cm_list); do
-		if [[ -f "$file" ]]; then
-			cp -f "$file" "$CM_BASE/$file"
-			echo "- '$file' copied"
+		if [[ -L "$file" ]]; then
+			# Symbolic link
+			target="$(readlink "$file")"
+			if [[ -f "$CM_BASE/$target" ]]; then
+				# TODO: make symbolic link relative
+				[[ $DRY_RUN == 0 ]] && ln -fs "$CM_BASE/$target" "$CM_BASE/$file"
+				verbose_echo "- '$file' symbo-linked"
+			else
+				echo "WARNING: symbolic link '$file' has no target within vault; skipping"
+			fi
+		elif [[ -f "$file" ]]; then
+			[[ $DRY_RUN == 0 ]] && cp -f "$file" "$CM_BASE/$file"
+			verbose_echo "- '$file' copied"
 		else
 			echo "WARNING: file '$file' doesn't exist; skipping"
 		fi
@@ -62,15 +85,20 @@ function cm_compare {
 	for file in $(cm_list); do
 		if [[ -f "$file" ]]; then
 			if diff --brief "$file" "$CM_BASE/$file" > /dev/null; then
-				echo "- '$file' is unchanged"
+				verbose_echo "- '$file' is unchanged"
 			else
-				echo "# '$file' HAS BEEN changed"
+				echo "# '$file' is changed"
 			fi
 		else
 			echo "WARNING: file '$file' doesn't exist; skipping"
 		fi
 	done
 }
+
+
+DRY_RUN=0
+VERBOSE=0
+CM_BASE="$(pwd)"
 
 if [[ ${1:-} == "init" ]]; then
 	cm_init
@@ -80,8 +108,6 @@ fi
 if [[ ! -f ./.config-man ]]; then
 	usage "The file ./.config-man not found"
 fi
-
-CM_BASE="$(pwd)"
 
 # Command
 if [[ $# -lt 1 ]]; then
@@ -93,6 +119,15 @@ case "$1" in
 esac
 shift
 
+while [[ $# -ge 1 ]]; do
+	case "$1" in
+		--dry-run|-dr) DRY_RUN=1; shift;;
+		--verbose|-v) VERBOSE=1; shift;;
+		--quiet|-q) VERBOSE=0; shift;;
+		-*) usage "Unknown flag '$1'";;
+		*) break;; # end of flags
+	esac
+done
 
 if [[ $cmd == "add" ]]; then
 	# Handle all FILES arguments
