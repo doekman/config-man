@@ -32,11 +32,22 @@ function verbose_echo {
 }
 
 function cm_init {
-	if [[ -f ./.config-man ]]; then
-		echo "WARNING: this folder is already initialized (the file '.config-man' exists)"
-	else
-		[[ $DRY_RUN == 0 ]] && touch ./.config-man
-	fi
+	local check_path
+	check_path="$(pwd)"
+	# Check if current and parent-folders are not a config-man base (cm repository can't be nested)
+	# Also, root-folder can't contain a .config-man file, so don't check.
+	while [[ $check_path != "/" ]]; do
+		if [[ -f "$check_path/.config-man" ]]; then
+			if [[ $check_path == "$(pwd)" ]]; then
+				echo "ERROR: this folder is already initialized (the file '.config-man' exists)"
+			else
+				echo "ERROR: the parent-folder '$check_path' is already initialized (the file '.config-man' exists)"
+			fi
+			exit 1
+		fi
+		check_path="$(dirname "$check_path")"
+	done
+	[[ $DRY_RUN == 0 ]] && touch ./.config-man
 }
 
 function cm_add {
