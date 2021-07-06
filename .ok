@@ -1,0 +1,1 @@
+lint: shellcheck cm.sh configure.sh
