@@ -17,7 +17,7 @@ function do_install {
 	if [[ -L "$BIN_PATH/$CMD_NAME" ]]; then
 		echo "Config-Man is already installed as '$BIN_PATH/$CMD_NAME'"
 	else
-		ln -s "$(pwd)/cm.sh" "$BIN_PATH/$CMD_NAME"
+		ln -s "$(pwd)/$BIN_NAME" "$BIN_PATH/$CMD_NAME"
 		echo "Config-Man is installed into '$BIN_PATH' as '$CMD_NAME'"
 	fi
 }
@@ -32,6 +32,7 @@ function do_uninstall {
 }
 
 cd "$(dirname "$0")"
+BIN_NAME="cm.sh"
 BIN_PATH=/usr/local/bin
 CMD_NAME="cm"
 
