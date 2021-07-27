@@ -12,7 +12,7 @@ COMMAND:
 	cm add FILE [...]   Add one or more files to the store
 	cm backup           Perform the backup
 	cm list             Shows all files in the store
-	cm compare          List all changed files
+	cm status           List all changed and missing files
 	cm restore          (not-implemented-yet)
 	cm help             Show this page
 FLAGS:
@@ -119,7 +119,7 @@ function cm_backup {
 	done
 }
 
-function cm_compare {
+function cm_status {
 	for file in $(cm_list); do
 		if [[ -f "$file" ]]; then
 			if diff --brief "$file" "$CM_BASE/$file" > /dev/null; then
@@ -156,7 +156,7 @@ if [[ $# -lt 1 ]]; then
 	usage "Please provide a command"
 fi
 case "$1" in
-	add|backup|compare|help|init|list|restore) cmd="$1";;
+	add|backup|status|help|init|list|restore) cmd="$1";;
 	*) usage "Unknown command '$1'";;
 esac
 shift
@@ -191,6 +191,6 @@ elif [[ $cmd == "backup" ]]; then
 	cm_backup
 elif [[ $cmd == "restore" ]]; then
 	echo "Not implemented yet"
-elif [[ $cmd == "compare" ]]; then
-	cm_compare
+elif [[ $cmd == "status" ]]; then
+	cm_status
 fi
