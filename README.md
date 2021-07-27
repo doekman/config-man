@@ -17,7 +17,6 @@ Functionality and reasons behind it are described in [what if][what-if]-issues:
 
 ## Usage
 
-
 	# Initialise a config-man vault
 	cm init
 	
@@ -26,6 +25,8 @@ Functionality and reasons behind it are described in [what if][what-if]-issues:
 	
 	# Show all files in vault
 	cm list
+
+You might want to exclude certain files, before running backup. See the `.config-man` for more information.
 
 	# Perform a backup
 	cm backup

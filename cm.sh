@@ -34,6 +34,14 @@ function verbose_echo {
 	fi
 }
 
+function cm_config_template {
+	cat <<HIERTUSSENVINDJEHETSJABLOONVOORHETCONFIGURATIEBESTAND
+# Some ignore patterns you might want to use
+#IGNORE_PATTERNS+=("*Icon*" "*/.DS_Store")  # Exclude some meta-data files on macOS
+#IGNORE_PATTERNS+=(".git/*")                # Exclude all git-internal files
+HIERTUSSENVINDJEHETSJABLOONVOORHETCONFIGURATIEBESTAND
+}
+
 function cm_init {
 	local check_path children
 	check_path="$(pwd)"
@@ -61,7 +69,7 @@ function cm_init {
 		echo "${children[*]}"
 		exit 2
 	fi
-	[[ $DRY_RUN == 0 ]] && touch "./$CONFIG_FILE"
+	[[ $DRY_RUN == 0 ]] && cm_config_template > "./$CONFIG_FILE"
 }
 
 function cm_add {
@@ -81,7 +89,13 @@ function cm_add {
 }
 
 function cm_list {
-	find "." -type f -not -name "$CONFIG_FILE" -and -not -name ".DS_Store" -and -not -path '*/\.git/*' | sed 's/^\.//'
+	local -a filter=(-not -name "$CONFIG_FILE")
+	if [[ "${IGNORE_PATTERNS+x}" ]]; then
+		for ipat in "${IGNORE_PATTERNS[@]}"; do
+			filter+=(-not -ipath "./$ipat")
+		done
+	fi
+	find "." -type f "${filter[@]}" | sed 's/^\.//'
 }
 
 function cm_backup {
@@ -120,20 +134,27 @@ function cm_compare {
 	done
 }
 
-
 CONFIG_FILE=".config-man"
 DRY_RUN=0
 VERBOSE=0
 CM_BASE="$(pwd)"
+# 
+declare -a IGNORE_PATTERNS=() # Declaring empty arrays on macOS doesn't work, but a las
+
 
 if [[ ${1:-} == "init" ]]; then
 	cm_init
 	exit 0
+elif [[ ${1:-} == "config_template" ]]; then
+	cm_config_template
+	exit
 fi
 
 if [[ ! -f ./$CONFIG_FILE ]]; then
 	usage "The file ./$CONFIG_FILE not found"
 fi
+# shellcheck source=/dev/null
+source ./$CONFIG_FILE
 
 # Command
 if [[ $# -lt 1 ]]; then
