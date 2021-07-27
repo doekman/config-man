@@ -8,10 +8,10 @@ function usage {
 Usage: $0 COMMAND [FLAGS] ...
 
 COMMAND:
-	cm init             Places a .config-man file in the current folder
-	cm add FILE [...]   Add one or more files to the vault
+	cm init             Initializes the current folder as a config-man store
+	cm add FILE [...]   Add one or more files to the store
 	cm backup           Perform the backup
-	cm list             Shows all files in the vault
+	cm list             Shows all files in the store
 	cm compare          List all changed files
 	cm restore          (not-implemented-yet)
 	cm help             Show this page
@@ -19,9 +19,16 @@ FLAGS:
 	-v, --verbose       Also print messages when something succeeds
 	-dr, --dry-run      Don't actually modify the file system
 
-You will need to run this tool from a config-man vault.
+You will need to all commands (except init and help) from an initialized config-man store.
 
 TOTHIERENNIETVERDER
+	if [[ $VERBOSE = 1 ]]; then
+		cat <<TOTHIERENOOKNIETVERDER
+VARIABLES:
+	SCRIPT_PATH  $SCRIPT_PATH
+	CM_BASE      $CM_BASE
+TOTHIERENOOKNIETVERDER
+	fi
 	if [[ $# -gt 0 ]]; then
 		echo "$(tput bel)❗️" "$@"
 		exit 1
@@ -32,14 +39,6 @@ function verbose_echo {
 	if [[ $VERBOSE == 1 ]]; then
 		echo "$@"
 	fi
-}
-
-function cm_config_template {
-	cat <<HIERTUSSENVINDJEHETSJABLOONVOORHETCONFIGURATIEBESTAND
-# Some ignore patterns you might want to use
-#IGNORE_PATTERNS+=("*Icon*" "*/.DS_Store")  # Exclude some meta-data files on macOS
-#IGNORE_PATTERNS+=(".git/*")                # Exclude all git-internal files
-HIERTUSSENVINDJEHETSJABLOONVOORHETCONFIGURATIEBESTAND
 }
 
 function cm_init {
@@ -69,7 +68,7 @@ function cm_init {
 		echo "${children[*]}"
 		exit 2
 	fi
-	[[ $DRY_RUN == 0 ]] && cm_config_template > "./$CONFIG_FILE"
+	[[ $DRY_RUN == 0 ]] && cat "$SCRIPT_PATH/config-template.bash" > "./$CONFIG_FILE"
 }
 
 function cm_add {
@@ -109,7 +108,7 @@ function cm_backup {
 				[[ $DRY_RUN == 0 ]] && ln -fs "$CM_BASE/$target" "$CM_BASE/$file"
 				verbose_echo "- '$file' symbo-linked"
 			else
-				echo "WARNING: symbolic link '$file' has no target within vault; skipping"
+				echo "WARNING: symbolic link '$file' has no target within store; skipping"
 			fi
 		elif [[ -f "$file" ]]; then
 			[[ $DRY_RUN == 0 ]] && cp -f "$file" "$CM_BASE/$file"
@@ -138,23 +137,19 @@ CONFIG_FILE=".config-man"
 DRY_RUN=0
 VERBOSE=0
 CM_BASE="$(pwd)"
+SCRIPT_PATH="$(dirname "$(readlink "$0" || echo "$0")")"
 # 
 declare -a IGNORE_PATTERNS=() # Declaring empty arrays on macOS doesn't work, but a las
 
 
-if [[ ${1:-} == "init" ]]; then
-	cm_init
-	exit 0
-elif [[ ${1:-} == "config_template" ]]; then
-	cm_config_template
-	exit
+if [[ -f ./$CONFIG_FILE ]]; then
+	# shellcheck source=/dev/null
+	source ./$CONFIG_FILE
+else
+	if [[ ! ${1:-} =~ init|help ]]; then
+		usage "The file ./$CONFIG_FILE not found"
+	fi
 fi
-
-if [[ ! -f ./$CONFIG_FILE ]]; then
-	usage "The file ./$CONFIG_FILE not found"
-fi
-# shellcheck source=/dev/null
-source ./$CONFIG_FILE
 
 # Command
 if [[ $# -lt 1 ]]; then
@@ -178,6 +173,8 @@ done
 
 if [[ $cmd == "help" ]]; then
 	usage
+elif [[ $cmd == "init" ]]; then
+	cm_init
 elif [[ $cmd == "add" ]]; then
 	# Handle all FILES arguments
 	if [[ $# -lt 1 ]]; then

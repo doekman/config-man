@@ -17,13 +17,13 @@ Functionality and reasons behind it are described in [what if][what-if]-issues:
 
 ## Usage
 
-	# Initialise a config-man vault
+	# Initialise a config-man store
 	cm init
 	
-	# Add files to the vault
+	# Add files to the store
 	cm add ~/.ssh/config ~/.gitconfig ~/.gitignore_global
 	
-	# Show all files in vault
+	# Show all files in store
 	cm list
 
 You might want to exclude certain files, before running backup. See the `.config-man` for more information.
